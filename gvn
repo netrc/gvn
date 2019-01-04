@@ -127,9 +127,15 @@ class TestGNV( unittest.TestCase ):
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("-t", help="run test suite", action="store_true")
+  parser.add_argument("-v", help="print version number", action="store_true")
   args = parser.parse_args()
 
   if args.t:
     del sys.argv[1:]   # so that unittest.main doesn't parse the args (and fail with usage)
     unittest.main()
+    sys.exit(0)
+
+  if args.v:
+    vers = "0.0.1 - todo"
+    print(vers)
     sys.exit(0)
