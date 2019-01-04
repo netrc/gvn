@@ -26,10 +26,14 @@ gvnTemplates = {
   PY: 'GVN_VERSION = "v0.0.0";  GVN_DATE = "2019-01-04T08:40:01-05:00"\n'
 }
 
+TEST_ISODATE=None   # this is overriden during testing  # need to declare global inside test class setup
 
 # see https://stackoverflow.com/questions/2150739/iso-time-iso-8601-in-python
 
 def isoDate():
+  if TEST_ISODATE:
+    return TEST_ISODATE
+
   utc_offset_sec = time.altzone if time.localtime().tm_isdst else time.timezone
   utc_offset = datetime.timedelta(seconds=-utc_offset_sec)
   id = datetime.datetime.now().replace(tzinfo=datetime.timezone(offset=utc_offset)).replace(microsecond=0).isoformat()
@@ -42,29 +46,22 @@ def bump(s):
       print("can't find!!!")
       raise Exception
     
-    print("maj: %s  min: %s  pat: %s" % ( m.group(1), m.group(2), m.group(3) ) )
-    print("span: %s", m.span() )
+    #print("maj: %s  min: %s  pat: %s" % ( m.group(1), m.group(2), m.group(3) ) )
+    #print("span: %s", m.span() )
     (p0, p1) = m.span()
-    print("p0: %d p1: %d" % (p0,p1) )
+    #print("p0: %d p1: %d" % (p0,p1) )
     
     pat = int(m.group(3)) + 1
     newa = "%sv%s.%s.%d%s" % (s[0:p0], m.group(1), m.group(2), pat, s[p1:])
-    print(newa)
+    #print(newa)
 
     m = re.search( ISODATE_REGEX, newa)
     if m:   # insert new date
       (p0, p1) = m.span()
-      print("date p0: %d p1: %d" % (p0,p1) )
+      #print("date p0: %d p1: %d" % (p0,p1) )
       newa = "%s%s%s" % (newa[0:p0], isoDate(), newa[p1:])
 
     return newa
-
-#assert bump('ver = "v0.0.0"; # comment') == 'ver = "v0.0.1"; # comment'
-#assert bump('ver = "v0.0.9"; # comment') == 'ver = "v0.0.10"; # comment'
-#print(bump('ver = "v0.0.9"; date = "2019-01-01T08:01:01-05:00"'))
-
-
-#sys.exit(0)
 
 
 def makeFirstIfNeeded():
@@ -112,6 +109,10 @@ def readExisting():
 import unittest
 
 class TestGNV( unittest.TestCase ):
+  def setUp(self):
+    global TEST_ISODATE
+    TEST_ISODATE = "2019-01-01T08:01:01-05:00"
+
   def test_isoDate(self):
     d = isoDate()
     self.assertEqual( len(d), 25 )
@@ -121,6 +122,7 @@ class TestGNV( unittest.TestCase ):
   def test_bump_strings(self):
     self.assertEqual ( bump('ver = "v0.0.0"; # comment') , 'ver = "v0.0.1"; # comment' )
     self.assertEqual ( bump('ver = "v0.0.9"; # comment') , 'ver = "v0.0.10"; # comment' )
+    self.assertEqual ( bump('ver = "v0.0.9"; date = "2019-01-01T08:01:01-05:00"'), 'ver = "v0.0.10"; date = "2019-01-01T08:01:01-05:00"' )
 ##########################################################
 
 
@@ -128,6 +130,8 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser()
   parser.add_argument("-t", help="run test suite", action="store_true")
   parser.add_argument("-v", help="print version number", action="store_true")
+  parser.add_argument("-n", help="dont write", action="store_true")
+  parser.add_argument("-d", help="debug on", action="store_true")
   args = parser.parse_args()
 
   if args.t:
@@ -139,3 +143,7 @@ if __name__ == "__main__":
     vers = "0.0.1 - todo"
     print(vers)
     sys.exit(0)
+  
+  # main code
+
+
