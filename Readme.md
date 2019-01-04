@@ -17,11 +17,12 @@ You can then...
 * display version number (and date) in your program/gui
 * find the version number tag in git: '''git tag'''
 * see your working commit and #-commits since last tag:  '''git describe'''
-
+* compact show logs: '''git log --pretty="%h %d %s" --decorate=full'''
 
 
 ### other things
 * could use '''git notes''' - add notes to commit? to tag?
+
 ### various non-answers
 * https://stackoverflow.com/questions/37814286/how-to-manage-the-version-number-in-git
 * https://git-scm.com/book/en/v2/Git-Basics-Tagging
