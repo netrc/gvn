@@ -148,9 +148,7 @@ if __name__ == "__main__":
 
   if args.v:
     import gvnVersion     # my own version number    
-    print(gvnVersion.GVN_VERSION_STR)
-    #vers = "0.0.1 - todo"
-    #print(vers)
+    print(gvnVersion.GVN_VERSION_STR, gvnVersion.GVN_DATE)
     sys.exit(0)
   
   # main code
