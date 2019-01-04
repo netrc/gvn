@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+
+# TODO: multiline string
+# TODO: -f gvnfile
+# TODO: -n newver
+
+# DOC: only one vN.N.N in a file
+# DOC: new gvn files have ISO date; you can delete
+
+import re
+import glob, sys
+import datetime, time
+
+# constants for languages supported
+JS="js"
+PY="py"
+# TODO: bash? java? C
+
+VERSION_REGEX='v([0-9]+)\.([0-9]+)\.([0-9]+)'
+ISODATE_REGEX='[12][0-9][0-9][0-9]-[01][0-9]-[0123][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9][+-][0-2][0-9]:[0-5][0-9]'
+
+gvnTemplates = {
+  JS: 'const var gvn_version = "v0.0.0";  const var gvn_date = "2019-01-04T08:40:01-05:00"\n',
+  PY: 'GVN_VERSION = "v0.0.0";  GVN_DATE = "2019-01-04T08:40:01-05:00"\n'
+}
+
+
+# see https://stackoverflow.com/questions/2150739/iso-time-iso-8601-in-python
+
+def isoDate():
+  utc_offset_sec = time.altzone if time.localtime().tm_isdst else time.timezone
+  utc_offset = datetime.timedelta(seconds=-utc_offset_sec)
+  id = datetime.datetime.now().replace(tzinfo=datetime.timezone(offset=utc_offset)).replace(microsecond=0).isoformat()
+  #print("id: ", id)
+  return id
+
+def bump(s):
+    m = re.search( VERSION_REGEX, s)
+    if not m:
+      print("can't find!!!")
+      raise Exception
+    
+    print("maj: %s  min: %s  pat: %s" % ( m.group(1), m.group(2), m.group(3) ) )
+    print("span: %s", m.span() )
+    (p0, p1) = m.span()
+    print("p0: %d p1: %d" % (p0,p1) )
+    
+    pat = int(m.group(3)) + 1
+    newa = "%sv%s.%s.%d%s" % (s[0:p0], m.group(1), m.group(2), pat, s[p1:])
+    print(newa)
+
+    m = re.search( ISODATE_REGEX, newa)
+    if m:   # insert new date
+      (p0, p1) = m.span()
+      print("date p0: %d p1: %d" % (p0,p1) )
+      newa = "%s%s%s" % (newa[0:p0], isoDate(), newa[p1:])
+
+    return newa
+
+#assert bump('ver = "v0.0.0"; # comment') == 'ver = "v0.0.1"; # comment'
+#assert bump('ver = "v0.0.9"; # comment') == 'ver = "v0.0.10"; # comment'
+#print(bump('ver = "v0.0.9"; date = "2019-01-01T08:01:01-05:00"'))
+
+
+#sys.exit(0)
+
+
+def makeFirstIfNeeded():
+  # f = glob(gvn*)
+
+  f = "gvn.js"
+
+  from pathlib import Path
+
+  fp = Path(f)
+
+  if not fp.exists():
+    v = "v0.0.1"
+    with open(f,"w") as g:
+      g.write( gvnTemplates[JS] )
+      # check for success 
+      sys.exit(0)
+
+
+def readExisting():
+  # exists, so bump
+  with open(f,"r") as g:
+      a = g.read()
+      print("a",a)
+      
+      m = re.search( VERSION_REGEX, a)
+      if not m:
+        print("can't find!!!")
+        sys.exit(1)
+      
+      print("maj: %s  min: %s  pat: %s" % ( m.group(1), m.group(2), m.group(3) ) )
+      print("span: %s", m.span() )
+      (p0, p1) = m.span()
+      print("p0: %d p1: %d" % (p0,p1) )
+      
+      pat = int(m.group(3)) + 1
+      newa = "%sv%s.%s.%d%s" % (a[0:p0], m.group(1), m.group(2), pat, a[p1:])
+      print(newa)
+      
+      with open(f,"w") as gw:
+        gw.write(newa)
+
+
+import unittest
+
+class TestMethods( unittest.TestCase ):
+  def test_isoDate(self):
+    d = isoDate()
+    self.assertEqual( len(d), 25 )
+    m = re.search( ISODATE_REGEX, d)
+    self.assertIsNotNone( m )
+
+  def test_bump_strings(self):
+    self.assertEqual ( bump('ver = "v0.0.0"; # comment') , 'ver = "v0.0.1"; # comment' )
+    self.assertEqual ( bump('ver = "v0.0.9"; # comment') , 'ver = "v0.0.10"; # comment' )
+
+
+if __name__ == "__main__":
+  unittest.main()
