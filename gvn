@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 
-# import gvn.py  and use it in -v   # gvn.GVN_VERSION_STR
+# TODO: logging
+# TODO: -d to turn on debug log level
+# TODO: -n don't write (create or bump)
 # TODO: multiline string
 # TODO: -f gvnfile
 # TODO: -n newver
+# TODO: bash? java? C
 
 # DOC: only one vN.N.N in a file
 # DOC: new gvn files have ISO date; you can delete
@@ -13,7 +16,6 @@ import glob, sys
 import datetime, time
 import argparse
 
-
 # gvn version file constants
 GVN_VERSION_FILE="gvnVersion."
 GVN_VERSION_GLOB=GVN_VERSION_FILE + "*"
@@ -21,7 +23,6 @@ GVN_VERSION_GLOB=GVN_VERSION_FILE + "*"
 # constants for languages supported
 JS="js"
 PY="py"
-# TODO: bash? java? C
 
 VERSION_REGEX='v([0-9]+)\.([0-9]+)\.([0-9]+)'
 ISODATE_REGEX='[12][0-9][0-9][0-9]-[01][0-9]-[0123][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9][+-][0-2][0-9]:[0-5][0-9]'
@@ -80,34 +81,34 @@ def createOrBump( lang ):
     print("many files; don't know what to do")
     sys.exit(1)
 
-  if len(files) == 1:
+  if len(files) == 1:   # must be the one to work on
     fname = files[0]
 
-  if len(files) == 0:
+  if len(files) == 0:   # must be trying to init
     if not lang:
       print("no file, have to create, but no lang specified")
       sys.exit(1)
+
     fname = GVN_VERSION_FILE + lang
     print("no files; need to make", fname)
     # make the file
     with open(fname,"w") as g:
-      g.write( gvnTemplates[lang] )
+      g.write( gvnTemplates[lang] )     # n.b. this writes out an old date; will be updated below
       # check for success 
     # yes, this falls through to "bump" version and update date
 
   # now bump version and set date
   with open(fname,"r") as g:
     vStr = g.read()
-    print("vStr",vStr)
+    print("old vStr: ",vStr)
       
   vStrBumped = bump( vStr)
-  print(vStrBumped)
+  print("new vStr: ", vStrBumped)
       
-  with open(fname,"w") as gw:
-    gw.write(vStrBumped)
+  with open(fname,"w") as g:
+    g.write(vStrBumped)
   # check !  e.g length
   
-
 ##########################################################
 import unittest
 
@@ -137,7 +138,7 @@ if __name__ == "__main__":
   parser.add_argument("-l", help="choose language py or js", action="store")
   parser.add_argument("-n", help="dont write", action="store_true")
   parser.add_argument("-d", help="debug on", action="store_true")
-  parser.add_argument("-v", help="print gvn version number", action="store_true")
+  parser.add_argument("-v", help="print my gvn version number", action="store_true")
   parser.add_argument("-t", help="run test suite", action="store_true")
   args = parser.parse_args()
 
@@ -155,9 +156,9 @@ if __name__ == "__main__":
   lang = None
   if args.l:     # will be needed only for first time creating file
     #print("lang: ", args.l)
-    if not args.l in gvnTemplates:
-      print("usage: -l (language) must be one of ", ", ".join(gvnTemplates) )
+    lang = args.l.lower()
+    if not lang in gvnTemplates:
+      print(lang, "? usage: -l (language) must be one of ", ", ".join(gvnTemplates) )
       sys.exit(1)
-    lang = args.l
 
   createOrBump(lang)
