@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# import gvn.py  and use it in -v   # gvn.GVN_VERSION
+# import gvn.py  and use it in -v   # gvn.GVN_VERSION_STR
 # TODO: multiline string
 # TODO: -f gvnfile
 # TODO: -n newver
@@ -13,6 +13,11 @@ import glob, sys
 import datetime, time
 import argparse
 
+
+# gvn version file constants
+GVN_VERSION_FILE="gvnVersion."
+GVN_VERSION_GLOB=GVN_VERSION_FILE + "*"
+
 # constants for languages supported
 JS="js"
 PY="py"
@@ -22,8 +27,8 @@ VERSION_REGEX='v([0-9]+)\.([0-9]+)\.([0-9]+)'
 ISODATE_REGEX='[12][0-9][0-9][0-9]-[01][0-9]-[0123][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9][+-][0-2][0-9]:[0-5][0-9]'
 
 gvnTemplates = {
-  JS: 'const var gvn_version = "v0.0.0";  const var gvn_date = "2019-01-04T08:40:01-05:00"\n',
-  PY: 'GVN_VERSION = "v0.0.0";  GVN_DATE = "2019-01-04T08:40:01-05:00"\n'
+  JS: 'const var gvn_version_str = "v0.0.0";  const var gvn_date = "2019-01-04T08:40:01-05:00"\n',
+  PY: 'GVN_VERSION_STR = "v0.0.0";  GVN_DATE = "2019-01-04T08:40:01-05:00"\n'
 }
 
 TEST_ISODATE=None   # this is overriden during testing  # need to declare global inside test class setup
@@ -40,6 +45,8 @@ def isoDate():
   #print("id: ", id)
   return id
 
+## Bump version and date within a string
+## Note: this is language independent, looing for vN.N.N and ISO Date strings
 def bump(s):
     m = re.search( VERSION_REGEX, s)
     if not m:
@@ -52,58 +59,54 @@ def bump(s):
     #print("p0: %d p1: %d" % (p0,p1) )
     
     pat = int(m.group(3)) + 1
-    newa = "%sv%s.%s.%d%s" % (s[0:p0], m.group(1), m.group(2), pat, s[p1:])
-    #print(newa)
+    sBumped = "%sv%s.%s.%d%s" % (s[0:p0], m.group(1), m.group(2), pat, s[p1:])
+    #print(sBumped)
 
-    m = re.search( ISODATE_REGEX, newa)
-    if m:   # insert new date
+    m = re.search( ISODATE_REGEX, sBumped)
+    if m:   # found date, so bump that too
       (p0, p1) = m.span()
       #print("date p0: %d p1: %d" % (p0,p1) )
-      newa = "%s%s%s" % (newa[0:p0], isoDate(), newa[p1:])
+      sBumped = "%s%s%s" % (sBumped[0:p0], isoDate(), sBumped[p1:])
 
-    return newa
+    return sBumped
 
+def createOrBump( lang ):
+  print("create or bump ", lang)
 
-def makeFirstIfNeeded():
-  # f = glob(gvn*)
+  # if no gvn file, automatic create according to required lang
+  # if gvn file, figureout lang, and bump
+  files = glob.glob( GVN_VERSION_GLOB )
+  if len(files) > 1:
+    print("many files; don't know what to do")
+    sys.exit(1)
 
-  f = "gvn.js"
+  if len(files) == 1:
+    fname = files[0]
 
-  from pathlib import Path
-
-  fp = Path(f)
-
-  if not fp.exists():
-    v = "v0.0.1"
-    with open(f,"w") as g:
-      g.write( gvnTemplates[JS] )
+  if len(files) == 0:
+    if not lang:
+      print("no file, have to create, but no lang specified")
+      sys.exit(1)
+    fname = GVN_VERSION_FILE + lang
+    print("no files; need to make", fname)
+    # make the file
+    with open(fname,"w") as g:
+      g.write( gvnTemplates[lang] )
       # check for success 
-      sys.exit(0)
+    # yes, this falls through to "bump" version and update date
 
-
-def readExisting():
-  # exists, so bump
-  with open(f,"r") as g:
-      a = g.read()
-      print("a",a)
+  # now bump version and set date
+  with open(fname,"r") as g:
+    vStr = g.read()
+    print("vStr",vStr)
       
-      m = re.search( VERSION_REGEX, a)
-      if not m:
-        print("can't find!!!")
-        sys.exit(1)
+  vStrBumped = bump( vStr)
+  print(vStrBumped)
       
-      print("maj: %s  min: %s  pat: %s" % ( m.group(1), m.group(2), m.group(3) ) )
-      print("span: %s", m.span() )
-      (p0, p1) = m.span()
-      print("p0: %d p1: %d" % (p0,p1) )
-      
-      pat = int(m.group(3)) + 1
-      newa = "%sv%s.%s.%d%s" % (a[0:p0], m.group(1), m.group(2), pat, a[p1:])
-      print(newa)
-      
-      with open(f,"w") as gw:
-        gw.write(newa)
-
+  with open(fname,"w") as gw:
+    gw.write(vStrBumped)
+  # check !  e.g length
+  
 
 ##########################################################
 import unittest
@@ -127,11 +130,15 @@ class TestGNV( unittest.TestCase ):
 
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser()
-  parser.add_argument("-t", help="run test suite", action="store_true")
-  parser.add_argument("-v", help="print version number", action="store_true")
+  parser = argparse.ArgumentParser(prog="gvn", 
+    description="automatic git version bumper",
+    epilog='''    gvn -l py - will create gvnVersion.py with version 0.0.1
+    gvn     - will bump gvnVersion patch level''' )
+  parser.add_argument("-l", help="choose language py or js", action="store")
   parser.add_argument("-n", help="dont write", action="store_true")
   parser.add_argument("-d", help="debug on", action="store_true")
+  parser.add_argument("-v", help="print gvn version number", action="store_true")
+  parser.add_argument("-t", help="run test suite", action="store_true")
   args = parser.parse_args()
 
   if args.t:
@@ -140,10 +147,19 @@ if __name__ == "__main__":
     sys.exit(0)
 
   if args.v:
-    vers = "0.0.1 - todo"
-    print(vers)
+    import gvnVersion     # my own version number    
+    print(gvnVersion.GVN_VERSION_STR)
+    #vers = "0.0.1 - todo"
+    #print(vers)
     sys.exit(0)
   
   # main code
+  lang = None
+  if args.l:     # will be needed only for first time creating file
+    #print("lang: ", args.l)
+    if not args.l in gvnTemplates:
+      print("usage: -l (language) must be one of ", ", ".join(gvnTemplates) )
+      sys.exit(1)
+    lang = args.l
 
-
+  createOrBump(lang)
