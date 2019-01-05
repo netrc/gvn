@@ -48,31 +48,34 @@ def isoDate():
 
 ## Bump version and date within a string
 ## Note: this is language independent, looing for vN.N.N and ISO Date strings
-def bump(s):
-    m = re.search( VERSION_REGEX, s)
-    if not m:
-      print("can't find!!!")
-      raise Exception
+def bump(s, newv):
+  m = re.search( VERSION_REGEX, s)
+  if not m:
+    print("can't find!!!")
+    raise Exception
     
-    #print("maj: %s  min: %s  pat: %s" % ( m.group(1), m.group(2), m.group(3) ) )
-    #print("span: %s", m.span() )
-    (p0, p1) = m.span()
-    #print("p0: %d p1: %d" % (p0,p1) )
-    
+  #print("maj: %s  min: %s  pat: %s" % ( m.group(1), m.group(2), m.group(3) ) )
+  #print("span: %s", m.span() )
+  (p0, p1) = m.span()
+  #print("p0: %d p1: %d" % (p0,p1) )
+ 
+  if not newv:      # default is to inc patch number
     pat = int(m.group(3)) + 1
     sBumped = "%sv%s.%s.%d%s" % (s[0:p0], m.group(1), m.group(2), pat, s[p1:])
     #print(sBumped)
+  else:
+    sBumped = "%s%s%s" % (s[0:p0], newv, s[p1:])
 
-    m = re.search( ISODATE_REGEX, sBumped)
-    if m:   # found date, so bump that too
-      (p0, p1) = m.span()
-      #print("date p0: %d p1: %d" % (p0,p1) )
-      sBumped = "%s%s%s" % (sBumped[0:p0], isoDate(), sBumped[p1:])
+  m = re.search( ISODATE_REGEX, sBumped)
+  if m:   # found date, so bump that too
+    (p0, p1) = m.span()
+    #print("date p0: %d p1: %d" % (p0,p1) )
+    sBumped = "%s%s%s" % (sBumped[0:p0], isoDate(), sBumped[p1:])
 
-    return sBumped
+  return sBumped
 
-def createOrBump( lang ):
-  print("create or bump ", lang)
+def createOrBump( lang, newv ):
+  print("create or bump ", lang, newv)
 
   # if no gvn file, automatic create according to required lang
   # if gvn file, figureout lang, and bump
@@ -102,7 +105,7 @@ def createOrBump( lang ):
     vStr = g.read()
     print("old vStr: ",vStr)
       
-  vStrBumped = bump( vStr)
+  vStrBumped = bump( vStr, newv ) 
   print("new vStr: ", vStrBumped)
       
   with open(fname,"w") as g:
@@ -138,7 +141,8 @@ if __name__ == "__main__":
   parser.add_argument("-l", help="choose language py or js", action="store")
   parser.add_argument("-n", help="dont write", action="store_true")
   parser.add_argument("-d", help="debug on", action="store_true")
-  parser.add_argument("-v", help="print my gvn version number", action="store_true")
+  parser.add_argument("-v", help="use given version number", action="store")
+  parser.add_argument("-V", help="print my gvn version number", action="store_true")
   parser.add_argument("-t", help="run test suite", action="store_true")
   args = parser.parse_args()
 
@@ -147,7 +151,7 @@ if __name__ == "__main__":
     unittest.main()
     sys.exit(0)
 
-  if args.v:
+  if args.V:
     import gvnVersion     # my own version number    
     print(gvnVersion.GVN_VERSION_STR, gvnVersion.GVN_DATE)
     sys.exit(0)
@@ -161,4 +165,5 @@ if __name__ == "__main__":
       print(lang, "? usage: -l (language) must be one of ", ", ".join(gvnTemplates) )
       sys.exit(1)
 
-  createOrBump(lang)
+  #TODO: check for valid new version vN.N.N
+  createOrBump(lang, args.v)

@@ -1,13 +1,13 @@
 #!/bin/bash
 
+function exit_on_error { echo "$@" ; exit 1 ; }
+
 # TODO: use $1 to do -v $1
 # TODO: add --nobump
 
-function exit_on_error { echo "$@" ; exit 1 ; }
-
-
+# all opts go to ./gvn
 echo bumping version number
-./gvn || exit_on_error problem with gvn bump 
+./gvn "$@"  || exit_on_error problem with gvn bump 
 
 
 # get version number
