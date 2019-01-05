@@ -1,11 +1,12 @@
 
 ## gvn
 
-simplistic tool to
-* generate/bump version numbers
+### gvn 
+* generate/bump version numbers in file
+
+### git-vtag-version
 * put tag in git
 * keep module up-to-date with importable strings to display
-
 
 ### basic plan
 * 'gvn' bumps version number string in gvn.js  (or .py...)
@@ -30,6 +31,9 @@ You can then...
 * see your working commit and #-commits since last tag:  `git describe`
 * compact show logs: `git log --pretty="%h %d %s" --decorate=full`
 
+
+### issues
+* for python code and import, leaves a pycache directory around. Any way in import to supress that?
 
 ### other things
 * --follow-tags   or `git config --global push.followTags true` 

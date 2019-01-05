@@ -28,7 +28,7 @@ VERSION_REGEX='v([0-9]+)\.([0-9]+)\.([0-9]+)'
 ISODATE_REGEX='[12][0-9][0-9][0-9]-[01][0-9]-[0123][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9][+-][0-2][0-9]:[0-5][0-9]'
 
 gvnTemplates = {
-  JS: 'const var gvn_version_str = "v0.0.0";  const var gvn_date = "2019-01-04T08:40:01-05:00"\n',
+  JS: 'var gvn_version_str = "v0.0.0";  var gvn_date = "2019-01-04T08:40:01-05:00"\n',
   PY: 'GVN_VERSION_STR = "v0.0.0";  GVN_DATE = "2019-01-04T08:40:01-05:00"\n'
 }
 
