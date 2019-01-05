@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# TODO: use $1 to do -v $1
+# TODO: add --nobump
+
+
+echo bumping version number
+./gvn || echo problem with gvn bump || exit 1
+
+
+# get version number
+gvnVersion=$(sed -e 's/^.*"v/v/' -e 's/".*//'  < gvnVersion.*)
+
+
+#$ git commit -m "code clean; comments" -a                       # commit all files
+echo new version: ${gvnVersion}. Enter commit and tag message....
+read message
+git commit -m "${message}" -a  || echo problem with git commit || exit 1
+
+
+# get commit ID
+#$ git log --pretty="%h %d" | head -1
+#eeaebea  (HEAD -> master, origin/master)
+#85da96d  (tag: v0.0.3)
+# WHY DID I THINK YOU COULD SEE THE TAG IN THE LOG HERE
+#[ x${commitID} == "x" ] && echo strange, cant see ${gvnVersion} in git log -1 --pretty=\"%h %d\" && exit 1
+commitID=$(git log -1 --pretty="%h %d" | awk '{ print $1 }')
+
+#$ git tag -a v0.0.3 -m "small code cleanups; readme" 85da96d    # make tag on that commit
+echo going to tag commit ${commitID}, ok\?
+read ok
+git tag -a $gvnVersion -m "${message}" ${commitID} 
+# TODO: check status
+
+#$ git push --follow-tags                                        # push files  and tags (see config)
+echo going to push all, ok\?
+read ok
+git push --follow-tags
+# TODO: check status
+
+echo done...
+git log -1 --pretty="%h %d %s" --decorate=full                   # look at what you've done
+
